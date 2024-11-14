@@ -1,0 +1,166 @@
+{
+  "nodes": {
+    "flake-utils": {
+      "inputs": {
+        "systems": "systems"
+      },
+      "locked": {
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1731319897,
+        "narHash": "sha256-PbABj4tnbWFMfBp6OcUK5iGy1QY+/Z96ZcLpooIbuEI=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "dc460ec76cbff0e66e269457d7b728432263166c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "flake-utils": "flake-utils",
+        "nixpkgs": "nixpkgs",
+        "zotero-note-editor-src": "zotero-note-editor-src",
+        "zotero-pdf-worker-src": "zotero-pdf-worker-src",
+        "zotero-reader-src": "zotero-reader-src",
+        "zotero-src": "zotero-src",
+        "zotero-styles": "zotero-styles",
+        "zotero-translators": "zotero-translators"
+      }
+    },
+    "systems": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
+      }
+    },
+    "zotero-note-editor-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1726741295,
+        "narHash": "sha256-9pIdSKP536ku0mQPDPAyILivkfyzgLcD7gbqICnywng=",
+        "owner": "zotero",
+        "repo": "note-editor",
+        "rev": "0f15a7f7ea4077f567f0cebbc847b6337b70ba3c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "zotero",
+        "repo": "note-editor",
+        "type": "github"
+      }
+    },
+    "zotero-pdf-worker-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1727949300,
+        "narHash": "sha256-5sqa7EZUjitgpIb+TEt2CTDTghhx5iOktasiEpyN2/c=",
+        "ref": "refs/heads/master",
+        "rev": "64c6acb0c06ed9f1d7f090052132292378c5cfe5",
+        "revCount": 129,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/zotero/pdf-worker.git"
+      },
+      "original": {
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/zotero/pdf-worker.git"
+      }
+    },
+    "zotero-reader-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1731515197,
+        "narHash": "sha256-gs7ad3bAC33Keq60hoYm4laXHMcmQm7jaNV4K39cJJU=",
+        "ref": "refs/heads/master",
+        "rev": "3639b1cb7f44e2f9c18da0c9cab99aa4aac008c7",
+        "revCount": 1316,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/zotero/reader.git"
+      },
+      "original": {
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/zotero/reader.git"
+      }
+    },
+    "zotero-src": {
+      "flake": false,
+      "locked": {
+        "dirtyRev": "a6c178dfe81e1f44f9a8a33085b5d5fe2fb6695b-dirty",
+        "dirtyShortRev": "a6c178dfe-dirty",
+        "lastModified": 1731475447,
+        "narHash": "sha256-//hVTurAo7y9Nn2CUTJcGnmtHrLpf+wuPj4ndDo3V9o=",
+        "type": "git",
+        "url": "file:/home/asahimbp/Desktop/Mint/zotero-client"
+      },
+      "original": {
+        "type": "git",
+        "url": "file:/home/asahimbp/Desktop/Mint/zotero-client"
+      }
+    },
+    "zotero-styles": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1726031941,
+        "narHash": "sha256-jK1lDbPsaP7ObBqFDlNpN+4uiLLgHrb3FqL1ojAOPwk=",
+        "owner": "zotero",
+        "repo": "bundled-styles",
+        "rev": "a653811f3eaa0e9d849ab6019493c7b8867fc96f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "zotero",
+        "repo": "bundled-styles",
+        "type": "github"
+      }
+    },
+    "zotero-translators": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1731430101,
+        "narHash": "sha256-ZAFDUIOcnlU5AAhvzKBsDNLWpttHQH24waOFWvcfG6M=",
+        "owner": "zotero",
+        "repo": "translators",
+        "rev": "bc846072a55a679866608b0d16009d2e4cfb8f0b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "zotero",
+        "repo": "translators",
+        "type": "github"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}
