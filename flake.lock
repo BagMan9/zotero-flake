@@ -98,11 +98,11 @@
     "zotero-reader-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1731515197,
-        "narHash": "sha256-gs7ad3bAC33Keq60hoYm4laXHMcmQm7jaNV4K39cJJU=",
+        "lastModified": 1731612147,
+        "narHash": "sha256-XIkZIORshSWi7Q0/ZOf8vPsYp5SFvSed8/gnnV3SLnk=",
         "ref": "refs/heads/master",
-        "rev": "3639b1cb7f44e2f9c18da0c9cab99aa4aac008c7",
-        "revCount": 1316,
+        "rev": "4643dccca930f643a9f79a2722b664358fb2c1f9",
+        "revCount": 1317,
         "submodules": true,
         "type": "git",
         "url": "https://github.com/zotero/reader.git"
@@ -119,7 +119,7 @@
         "dirtyRev": "a6c178dfe81e1f44f9a8a33085b5d5fe2fb6695b-dirty",
         "dirtyShortRev": "a6c178dfe-dirty",
         "lastModified": 1731475447,
-        "narHash": "sha256-//hVTurAo7y9Nn2CUTJcGnmtHrLpf+wuPj4ndDo3V9o=",
+        "narHash": "sha256-n56v9W6FoXTOJVkAsODYSeiaPrY56iJh4Zsx8m/UizI=",
         "type": "git",
         "url": "file:/home/asahimbp/Desktop/Mint/zotero-client"
       },

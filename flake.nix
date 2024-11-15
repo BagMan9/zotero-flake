@@ -41,10 +41,14 @@
       app_short_revision = "<SHORTCOMMITREVISION>";
       app_branch_name = "main";
 
-      patch_package_json = name: package: patch: pkgs.stdenv.mkDerivation {
+      patch_package_json = name: path: patch: pkgs.stdenv.mkDerivation {
         name = "patched_${name}_package_json";
-        unpackPhase = ''
-          cp ${package}/package.json .
+        src = builtins.path {
+          name = "${name}_package_json";
+          inherit path;
+          filter = filepath: type: type == "regular" && baseNameOf filepath == "package.json" && dirOf filepath == "${path}"; 
+        };
+        buildPhase = ''
           ${patch}
         '';
         installPhase = ''
@@ -52,11 +56,14 @@
           cp package.json $out/
         '';
       };
+
+      patched_zotero_package_json = patch_package_json "zotero" zotero-src ''
+      '';
       
       yarn_deps = pkgs.mkYarnModules {
         pname = "zotero-yarn-deps";
         version = "master";
-        packageJSON = "${zotero-src}/package.json";
+        packageJSON = "${patched_zotero_package_json}/package.json";
         yarnLock = ./yarn.lock;
         yarnNix = ./yarn.nix;
       };
@@ -132,11 +139,18 @@
         sed -i 's/x86_64/aarch64/g' app/scripts/dir_build
         sed -i 's/x86_64/aarch64/g' app/scripts/add_omni_file
       '';
+      shebang_patches = ''
+        find ./app -type f -exec sed -i 's/\/bin\/bash/${pkgs.lib.strings.escape ["/"] "${pkgs.bash}/bin/bash"}/g' {} \;
+        find ./app -type f -exec sed -i 's/\/usr\/bin\/env python3/${pkgs.lib.strings.escape ["/"] "${pkgs.python3}/bin/python"}/g' {} \;
+      '';
       misc_patches = ''
         sed -i '1d;s/colors.yellow//g' js-build/build.js
         sed -i 's/$(arch)/"${if system == "aarch64-linux" then "aarch64" else "x86_64"}"/g' app/scripts/dir_build
-        sed -i 's/"$SCRIPT_DIR/bash "$SCRIPT_DIR/g' app/scripts/build_and_run
-        sed -i 's/"$SCRIPT_DIR/bash "$SCRIPT_DIR/g' app/scripts/dir_build
+
+        sed -i 's/fs.copy.*;/exec(`cp -r "''${path.join(modulePath, \"build\", \"zotero\")}" "''${targetDir}"`);/g' js-build/pdf-reader.js       
+        sed -i 's/fs.copy.*;/exec(`cp -r "''${path.join(modulePath, \"build\", \"zotero\")}" "''${targetDir}"`);/g' js-build/note-editor.js       
+
+        sed -i 's/find/echo/g' app/scripts/prepare_build
       '';
       
       shared_build_inputs = with pkgs; [
@@ -210,24 +224,30 @@
 
           src = "${zotero-src}/";
 
-          nativeBuildInputs = shared_build_inputs ++ [ yarn_deps ];
+          nativeBuildInputs = shared_build_inputs ++ [ pkgs.python3 pkgs.tree yarn_deps ];
 
           patchPhase = ''
             ${purity_patches}
             ${if system == "aarch64-linux" then aarch64_patches else ""}
             ${skip_npm_command_patches}
+            ${shebang_patches}
             ${misc_patches}
           '';
 
           buildPhase = ''
             set -x
-            ln -s ${zotero-styles} ./styles
-            ln -s ${zotero-translators} ./translators
+            rm -rf ./reader
+            rm -rf ./pdf-worker
+            rm -rf ./note-editor
+            rm -rf ./styles
+            rm -rf ./translators
+            cp -r --no-preserve=mode,ownership ${zotero-styles} ./styles
+            cp -r --no-preserve=mode,ownership ${zotero-translators} ./translators
             ln -s ${zotero-reader} ./reader
             ln -s ${zotero-pdf-worker} ./pdf-worker
             ln -s ${zotero-note-editor} ./note-editor
             ${link_deps "." yarn_deps}
-            NODE_ENV="debug" NODE_PATH="./node_modules" bash ./app/scripts/build_and_run -r
+            NODE_ENV="debug" NODE_PATH="./node_modules" ./app/scripts/build_and_run -r
             cp -r ./dist $out
           '';
 
