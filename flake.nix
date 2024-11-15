@@ -67,7 +67,19 @@
       flake = false;
     };
   };
-  outputs = inputs @ { self, nixpkgs, flake-utils, zotero-src, zotero-reader-src, zotero-pdf-worker-src, zotero-note-editor-src, zotero-styles, zotero-translators, ... }: flake-utils.lib.eachDefaultSystem (system: let
+  outputs = inputs @ {
+    self,
+    nixpkgs,
+    flake-utils,
+    zotero-src,
+    zotero-reader-src,
+    zotero-pdf-worker-src,
+    zotero-note-editor-src,
+    zotero-styles,
+    zotero-translators,
+    ...
+  }:
+    flake-utils.lib.eachDefaultSystem (system: let
       pkgs = nixpkgs.legacyPackages.${system};
 
       pdf_worker_revision = zotero-pdf-worker-src.rev;
@@ -77,25 +89,27 @@
       app_short_revision = "LOLOLOL";
       app_branch_name = "main";
 
-      patch_package_json = name: path: patch: pkgs.stdenv.mkDerivation {
-        name = "patched_${name}_package_json";
-        src = builtins.path {
-          name = "${name}_package_json";
-          inherit path;
-          filter = filepath: type: type == "regular" && baseNameOf filepath == "package.json" && dirOf filepath == "${path}"; 
+      patch_package_json = name: path: patch:
+        pkgs.stdenv.mkDerivation {
+          name = "patched_${name}_package_json";
+          src = builtins.path {
+            name = "${name}_package_json";
+            inherit path;
+            filter = filepath: type: type == "regular" && baseNameOf filepath == "package.json" && dirOf filepath == "${path}";
+          };
+          buildPhase = ''
+            ${patch}
+          '';
+          installPhase = ''
+            mkdir -p $out
+            cp package.json $out/
+          '';
         };
-        buildPhase = ''
-          ${patch}
-        '';
-        installPhase = ''
-          mkdir -p $out
-          cp package.json $out/
-        '';
-      };
 
-      patched_zotero_package_json = patch_package_json "zotero" zotero-src ''
-      '';
-      
+      patched_zotero_package_json =
+        patch_package_json "zotero" zotero-src ''
+        '';
+
       yarn_deps = pkgs.mkYarnModules {
         pname = "zotero-yarn-deps";
         version = "master";
@@ -103,11 +117,11 @@
         yarnLock = ./yarn.lock;
         yarnNix = ./yarn.nix;
       };
-      
+
       patched_reader_package_json = patch_package_json "reader" zotero-reader-src ''
         sed -i '50 a "raw-loader": "^4.0.2",' package.json
-      '';     
-      
+      '';
+
       reader_yarn_deps = pkgs.mkYarnModules rec {
         pname = "reader-yarn-deps";
         version = "master";
@@ -116,23 +130,23 @@
         yarnNix = ./reader_yarn.nix;
         preBuild = ''
           mkdir -p "deps/${pname}"
-          ln -s "${zotero-reader-src}/epubjs" "deps/${pname}/epubjs" 
+          ln -s "${zotero-reader-src}/epubjs" "deps/${pname}/epubjs"
         '';
-      };    
+      };
       pdf_worker_yarn_deps = pkgs.mkYarnModules {
         pname = "pdf-worker-yarn-deps";
         version = "master";
         packageJSON = "${zotero-pdf-worker-src}/package.json";
         yarnLock = ./pdf-worker_yarn.lock;
         yarnNix = ./pdf-worker_yarn.nix;
-      };    
+      };
       note_editor_yarn_deps = pkgs.mkYarnModules {
         pname = "note-editor-yarn-deps";
         version = "master";
         packageJSON = "${zotero-note-editor-src}/package.json";
         yarnLock = ./note-editor_yarn.lock;
         yarnNix = ./note-editor_yarn.nix;
-      };    
+      };
 
       patched_pdfjs_package_json = patch_package_json "pdfjs" "${zotero-reader-src}/pdfjs/pdf.js" ''
         sed -i '10d' package.json
@@ -152,12 +166,18 @@
         locale = "en-US";
         hash-aarch64 = "s+41WQVe6TOuJNmTNmCz+tidw80LFA/g5QqNdDCYseI=";
         hash-x86_64 = "iZrdHiRsEs9LnAjtVYNGbd1vMOC7R2+K2rHI+OQpFTE=";
-        reverse-system = if system == "aarch64-linux" then "linux-aarch64" else "linux-x86_64";
-      in pkgs.fetchzip {
+        reverse-system =
+          if system == "aarch64-linux"
+          then "linux-aarch64"
+          else "linux-x86_64";
+      in
+        pkgs.fetchzip {
           url = "https://ftp.mozilla.org/pub/firefox/nightly/${nightly-str}/firefox-${version}.${locale}.${reverse-system}.tar.bz2";
-          sha256 = if system == "aarch64-linux" then hash-aarch64 else hash-x86_64;
-      };
-        
+          sha256 =
+            if system == "aarch64-linux"
+            then hash-aarch64
+            else hash-x86_64;
+        };
 
       link_deps = path: package: ''
         ln -s ${package}/node_modules ${path}/node_modules
@@ -174,12 +194,12 @@
 
         # Firefox download
         sed -i 's/curl -O .*/echo "Skipped curl"/g' app/scripts/fetch_xulrunner
-        sed -i 's/tar xvf .*/echo "Skipped tar xvf"/g' app/scripts/fetch_xulrunner 
+        sed -i 's/tar xvf .*/echo "Skipped tar xvf"/g' app/scripts/fetch_xulrunner
       '';
       skip_npm_command_patches = ''
         sed -i 's/npm ci/echo "Skipped npm ci"/g' js-build/pdf-reader.js
         sed -i 's/npm ci/echo "Skipped npm ci"/g' js-build/pdf-worker.js
-        sed -i 's/npm ci/echo "Skipped npm ci"/g' js-build/note-editor.js       
+        sed -i 's/npm ci/echo "Skipped npm ci"/g' js-build/note-editor.js
         sed -i 's/npm run build/echo "Skipped npm run build"/g' js-build/pdf-reader.js
         sed -i 's/npm run build/echo "Skipped npm run build"/g' js-build/pdf-worker.js
         sed -i 's/npm run build/echo "Skipped npm run build"/g' js-build/note-editor.js
@@ -200,11 +220,15 @@
       '';
       misc_patches = ''
         sed -i '1d;s/colors.yellow//g' js-build/build.js
-        sed -i 's/$(arch)/"${if system == "aarch64-linux" then "aarch64" else "x86_64"}"/g' app/scripts/dir_build
+        sed -i 's/$(arch)/"${
+          if system == "aarch64-linux"
+          then "aarch64"
+          else "x86_64"
+        }"/g' app/scripts/dir_build
 
         # fs.copy does not work here, but cp does. I suspect it's a node bug.
-        sed -i 's/fs.copy.*;/exec(`cp -r "''${path.join(modulePath, \"build\", \"zotero\")}" "''${targetDir}"`);/g' js-build/pdf-reader.js       
-        sed -i 's/fs.copy.*;/exec(`cp -r "''${path.join(modulePath, \"build\", \"zotero\")}" "''${targetDir}"`);/g' js-build/note-editor.js       
+        sed -i 's/fs.copy.*;/exec(`cp -r "''${path.join(modulePath, \"build\", \"zotero\")}" "''${targetDir}"`);/g' js-build/pdf-reader.js
+        sed -i 's/fs.copy.*;/exec(`cp -r "''${path.join(modulePath, \"build\", \"zotero\")}" "''${targetDir}"`);/g' js-build/note-editor.js
 
         # These config options no longer exist.
         sed -i 's/.*MOZ_SERVICES_HEALTHREPORT.*//g' app/scripts/fetch_xulrunner
@@ -221,13 +245,13 @@
 
         # Don't let the script take a hash of firefox for whatever reason
         # Plus I don't want to add openssl as a dependency
-        sed -i 's/set -euo pipefail/exit 0/g' app/scripts/xulrunner_hash 
+        sed -i 's/set -euo pipefail/exit 0/g' app/scripts/xulrunner_hash
 
         sed -i 's/.*LightweightThemeConsumer.*//g' app/build.sh
         sed -i 's/rm -rf "$omni_dir"//g' app/build.sh
         sed -i 's/rm -rf $BUILD_DIR/echo "Skipped rm -rf BUILD_DIR"/g' app/build.sh
         sed -i 's/rm -rf $build_dir/echo "Skipped rm -rf build_dir"/g' app/scripts/dir_build
-        
+
         # Don't enable update machinery
         sed -i 's/check_lfs_file.*updater.tar.xz"//g' app/build.sh
         sed -i 's/tar xf.*updater"//g' app/build.sh
@@ -235,9 +259,13 @@
 
         sed -i 's/"$APP_ROOT_DIR.*-purgecaches.*//g' app/scripts/build_and_run
       '';
-      
+
       shared_build_inputs = with pkgs; [
-        nodejs rsync yarn bash git
+        nodejs
+        rsync
+        yarn
+        bash
+        git
       ];
     in rec {
       formatter = pkgs.alejandra;
@@ -246,13 +274,13 @@
           name = "zotero-reader";
           src = "${zotero-reader-src}";
 
-          nativeBuildInputs = shared_build_inputs ++ [ reader_yarn_deps pdfjs_yarn_deps ];
-          
+          nativeBuildInputs = shared_build_inputs ++ [reader_yarn_deps pdfjs_yarn_deps];
+
           patchPhase = ''
             sed -i 's/npx //g' pdfjs/build
             sed -i 's/npm ci/echo "Skipped npm ci in reader pdfjs build"/g' pdfjs/build
           '';
-          
+
           buildPhase = ''
             set -x
             ${link_deps "." reader_yarn_deps}
@@ -266,7 +294,7 @@
           name = "zotero-pdf-worker";
           src = "${zotero-pdf-worker-src}";
 
-          nativeBuildInputs = shared_build_inputs ++ [ pdf_worker_yarn_deps pdfjs_yarn_deps ];
+          nativeBuildInputs = shared_build_inputs ++ [pdf_worker_yarn_deps pdfjs_yarn_deps];
 
           patchPhase = ''
             sed -i 's/npx //g' scripts/build-pdfjs
@@ -288,7 +316,7 @@
           name = "zotero-note-editor";
           src = "${zotero-note-editor-src}";
 
-          nativeBuildInputs = shared_build_inputs ++ [ note_editor_yarn_deps ];
+          nativeBuildInputs = shared_build_inputs ++ [note_editor_yarn_deps];
 
           patchPhase = ''
             sed -i 's/git rev-parse HEAD/echo "${note_editor_revision}"/g' scripts/upload
@@ -304,17 +332,94 @@
         };
 
         zotero-firefox = firefox-tar;
-        
+
         zotero = pkgs.stdenv.mkDerivation rec {
-          name = "zotero";
+          pname = "zotero";
+          version = "0.0.1";
 
           src = "${zotero-src}/";
 
-          nativeBuildInputs = shared_build_inputs ++ [ pkgs.python3 pkgs.tree pkgs.perl pkgs.zip pkgs.unzip yarn_deps ];
+          nativeBuildInputs = with pkgs;
+            [
+              autoPatchelfHook
+              wrapGAppsHook3
+              python3
+              perl
+              zip
+              unzip
+              yarn_deps
+            ]
+            ++ shared_build_inputs;
+
+          # Shamelessly stolen from pkgs.zotero_7
+          buildInputs = with pkgs; [
+            gsettings-desktop-schemas
+            glib
+            gtk3
+            gnome.adwaita-icon-theme
+            dconf
+            xorg.libXtst
+            alsa-lib
+            stdenv.cc.cc
+            atk
+            cairo
+            curl
+            cups
+            dbus-glib
+            dbus
+            fontconfig
+            freetype
+            gdk-pixbuf
+            glib
+            glibc
+            gtk3
+            xorg.libX11
+            xorg.libXScrnSaver
+            xorg.libXcomposite
+            xorg.libXcursor
+            xorg.libxcb
+            xorg.libXdamage
+            xorg.libXext
+            xorg.libXfixes
+            xorg.libXi
+            xorg.libXinerama
+            xorg.libXrender
+            xorg.libXt
+            libnotify
+            libGLU
+            libGL
+            nspr
+            nss
+            pango
+          ];
+
+          dontStrip = true;
+
+          desktopItem = pkgs.makeDesktopItem {
+            name = "zotero";
+            exec = "zotero -url %U";
+            icon = "zotero";
+            comment = meta.description;
+            desktopName = "Zotero";
+            genericName = "Reference Management";
+            categories = ["Office" "Database"];
+            startupNotify = true;
+            mimeTypes = ["x-scheme-handler/zotero" "text/plain"];
+          };
+
+          preFixup = ''
+            gappsWrapperArgs+=(
+              --prefix PATH : ${pkgs.lib.makeBinPath [pkgs.coreutils]}
+            )
+          '';
 
           patchPhase = ''
             ${purity_patches}
-            ${if system == "aarch64-linux" then aarch64_patches else ""}
+            ${
+              if system == "aarch64-linux"
+              then aarch64_patches
+              else ""
+            }
             ${skip_npm_command_patches}
             ${shebang_patches}
             ${misc_patches}
@@ -338,11 +443,11 @@
             ${fill_submodule inputs.zotero-utilities "./chrome/content/zotero/xpcom/utilities"}
             ${fill_submodule inputs.zotero-translate "./chrome/content/zotero/xpcom/translate"}
             ${fill_submodule inputs.zotero-libreoffice-integration "./app/modules/zotero-libreoffice-integration"}
-                        
+
             # Place the un-tarred Firefox download for app/scripts/fetch_xulrunner to deal with
             mkdir -p ./app/xulrunner
             cp -r --no-preserve=mode,ownership ${firefox-tar} ./app/xulrunner/firefox
-            
+
             # Link these submodules; their content does not need to be modified
             rm -rf ./reader
             rm -rf ./pdf-worker
@@ -353,19 +458,45 @@
 
             ${link_deps "." yarn_deps}
             NODE_ENV="debug" NODE_PATH="./node_modules" ./app/scripts/build_and_run -r
-
-            mkdir -p $out/bin
-            mkdir -p $out/share/applications
-            cp -r app/staging/* $out
-            mv $out/Zotero_* $out/zotero
-            chmod +X $out/zotero/zotero-bin
-            ln -s $out/zotero/zotero-bin $out/bin
-            ln -s $out/zotero/zotero.desktop $out/share/applications
+            
           '';
 
-        };
+          installPhase = ''
+            cd app/staging
+            runHook preInstall
+            cd ../..
 
-        
+            mv app/staging/Zotero* app/staging/zotero
+            chmod +x app/staging/zotero/zotero
+            chmod +x app/staging/zotero/zotero-bin
+            
+            mkdir -p "$prefix/usr/lib/zotero-${version}"
+            cp -r app/staging/zotero "$prefix/usr/lib/zotero-${version}"
+            mkdir -p "$out/bin"
+            ln -s "$prefix/usr/lib/zotero-${version}/zotero" "$out/bin/"
+
+            # install desktop file and icons.
+            mkdir -p $out/share/applications
+            cp ${desktopItem}/share/applications/* $out/share/applications/
+            ls app/staging/zotero
+            for size in 32 64 128; do
+              install -Dm444 app/staging/zotero/icons/icon$size.png \
+                $out/share/icons/hicolor/''${size}x''${size}/apps/zotero.png
+            done
+            install -Dm444 app/staging/zotero/icons/symbolic.svg \
+                $out/share/icons/hicolor/symbolic/apps/zotero-symbolic.svg
+
+            runHook postInstall
+          '';
+
+          meta = with pkgs.lib; {
+            homepage = "https://www.zotero.org";
+            description = "Collect, organize, cite, and share your research sources";
+            mainProgram = "zotero";
+            license = licenses.agpl3Only;
+            platforms = ["x86_64-linux" "aarch64-linux"];
+          };
+        };
       };
     });
 }
