@@ -1,5 +1,37 @@
 {
   "nodes": {
+    "chai": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1728492917,
+        "narHash": "sha256-Acq5h+j+rcEMwAU+yuVbfkOqZu/kwuOA4JtqRvWjghQ=",
+        "owner": "chaijs",
+        "repo": "chai",
+        "rev": "1b1780582c07eefb3781333e24316865b9db7ae8",
+        "type": "github"
+      },
+      "original": {
+        "owner": "chaijs",
+        "repo": "chai",
+        "type": "github"
+      }
+    },
+    "chai-as-promised": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1717957136,
+        "narHash": "sha256-1vqmLXdSXfIazqa6pSDfgJk8xtLMKKr2y92Y3nJKLHU=",
+        "owner": "domenic",
+        "repo": "chai-as-promised",
+        "rev": "85ce33410b3e31c7508e44ede3e5cf4df4244df8",
+        "type": "github"
+      },
+      "original": {
+        "owner": "domenic",
+        "repo": "chai-as-promised",
+        "type": "github"
+      }
+    },
     "flake-utils": {
       "inputs": {
         "systems": "systems"
@@ -15,6 +47,22 @@
       "original": {
         "owner": "numtide",
         "repo": "flake-utils",
+        "type": "github"
+      }
+    },
+    "mocha": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1731347730,
+        "narHash": "sha256-JcYe/DH7EoH64bVsuxZZZe7XH2VhvusungyHMWQB/Zg=",
+        "owner": "mochajs",
+        "repo": "mocha",
+        "rev": "d3b2c386db74f0d448c7381097381dedb1c996f2",
+        "type": "github"
+      },
+      "original": {
+        "owner": "mochajs",
+        "repo": "mocha",
         "type": "github"
       }
     },
@@ -36,14 +84,23 @@
     },
     "root": {
       "inputs": {
+        "chai": "chai",
+        "chai-as-promised": "chai-as-promised",
         "flake-utils": "flake-utils",
+        "mocha": "mocha",
         "nixpkgs": "nixpkgs",
+        "zotero-csl-locale": "zotero-csl-locale",
+        "zotero-libreoffice-integration": "zotero-libreoffice-integration",
         "zotero-note-editor-src": "zotero-note-editor-src",
         "zotero-pdf-worker-src": "zotero-pdf-worker-src",
         "zotero-reader-src": "zotero-reader-src",
+        "zotero-resource-SingleFile": "zotero-resource-SingleFile",
+        "zotero-schema": "zotero-schema",
         "zotero-src": "zotero-src",
         "zotero-styles": "zotero-styles",
-        "zotero-translators": "zotero-translators"
+        "zotero-translate": "zotero-translate",
+        "zotero-translators": "zotero-translators",
+        "zotero-utilities": "zotero-utilities"
       }
     },
     "systems": {
@@ -58,6 +115,38 @@
       "original": {
         "owner": "nix-systems",
         "repo": "default",
+        "type": "github"
+      }
+    },
+    "zotero-csl-locale": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1729084884,
+        "narHash": "sha256-hUznBn5L8AV0vBGJIBOY2PNwFhak1Xos7hLLvlFQuf8=",
+        "owner": "citation-style-language",
+        "repo": "locales",
+        "rev": "4753e3a9aca4b806ac0e3036ed727d47bf8f678e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "citation-style-language",
+        "repo": "locales",
+        "type": "github"
+      }
+    },
+    "zotero-libreoffice-integration": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1725429073,
+        "narHash": "sha256-1bFaeO2VuEtlAV+j/RdiStU3PAB78qvheqBVbKp/Q6Q=",
+        "owner": "zotero",
+        "repo": "zotero-libreoffice-integration",
+        "rev": "39a4b0586c110d9ed42561295bc36e4e0383c793",
+        "type": "github"
+      },
+      "original": {
+        "owner": "zotero",
+        "repo": "zotero-libreoffice-integration",
         "type": "github"
       }
     },
@@ -113,13 +202,45 @@
         "url": "https://github.com/zotero/reader.git"
       }
     },
+    "zotero-resource-SingleFile": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1731509862,
+        "narHash": "sha256-1U241ZfkAv51Zibcg+HvyY9EoX0aKJJA4tlAKfF1MXE=",
+        "owner": "gildas-lormeau",
+        "repo": "SingleFile",
+        "rev": "98506a2fac8d5e6cfb7064a01ef63ea39d05fdbf",
+        "type": "github"
+      },
+      "original": {
+        "owner": "gildas-lormeau",
+        "repo": "SingleFile",
+        "type": "github"
+      }
+    },
+    "zotero-schema": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1723961270,
+        "narHash": "sha256-P+4MXUD3ip3DceyUqMh+hgmHwaJqF0jUuuncliFdoYE=",
+        "owner": "zotero",
+        "repo": "zotero-schema",
+        "rev": "a605ccbf05be710fa622e133e9f1f7c24cbd41a5",
+        "type": "github"
+      },
+      "original": {
+        "owner": "zotero",
+        "repo": "zotero-schema",
+        "type": "github"
+      }
+    },
     "zotero-src": {
       "flake": false,
       "locked": {
         "dirtyRev": "a6c178dfe81e1f44f9a8a33085b5d5fe2fb6695b-dirty",
         "dirtyShortRev": "a6c178dfe-dirty",
         "lastModified": 1731475447,
-        "narHash": "sha256-5fjlMCTOoFXG2EaARtB/qZAkuXLs1oFKn0YE0ej/d1I=",
+        "narHash": "sha256-VrGD4QJsk4ezHMj9UQNuGdkSDywrYpp0e9DKYN8xkQk=",
         "type": "git",
         "url": "file:/home/asahimbp/Desktop/Mint/zotero-client"
       },
@@ -144,6 +265,22 @@
         "type": "github"
       }
     },
+    "zotero-translate": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1727458046,
+        "narHash": "sha256-dzkMnGEcFtJ3S10LtLVpq4d5O4f9+Jk12lrXhRegtPk=",
+        "owner": "zotero",
+        "repo": "translate",
+        "rev": "93ff314aee4d07a5b04e8ddbdc1ba90dd376e952",
+        "type": "github"
+      },
+      "original": {
+        "owner": "zotero",
+        "repo": "translate",
+        "type": "github"
+      }
+    },
     "zotero-translators": {
       "flake": false,
       "locked": {
@@ -157,6 +294,22 @@
       "original": {
         "owner": "zotero",
         "repo": "translators",
+        "type": "github"
+      }
+    },
+    "zotero-utilities": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1729053615,
+        "narHash": "sha256-pwcPuyyUmTU4JlEknJt+OQybTNHfn/iUEkbH6hW1NVA=",
+        "owner": "zotero",
+        "repo": "utilities",
+        "rev": "c879fa18113646c18abc951ed86481bfc2b2d134",
+        "type": "github"
+      },
+      "original": {
+        "owner": "zotero",
+        "repo": "utilities",
         "type": "github"
       }
     }

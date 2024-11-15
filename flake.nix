@@ -30,15 +30,51 @@
       url = "github:zotero/translators";
       flake = false;
     };
+    zotero-csl-locale = {
+      url = "github:citation-style-language/locales";
+      flake = false;
+    };
+    zotero-schema = {
+      url = "github:zotero/zotero-schema";
+      flake = false;
+    };
+    zotero-resource-SingleFile = {
+      url = "github:gildas-lormeau/SingleFile";
+      flake = false;
+    };
+    zotero-utilities = {
+      url = "github:zotero/utilities";
+      flake = false;
+    };
+    zotero-translate = {
+      url = "github:zotero/translate";
+      flake = false;
+    };
+    zotero-libreoffice-integration = {
+      url = "github:zotero/zotero-libreoffice-integration";
+      flake = false;
+    };
+    chai = {
+      url = "github:chaijs/chai";
+      flake = false;
+    };
+    mocha = {
+      url = "github:mochajs/mocha";
+      flake = false;
+    };
+    chai-as-promised = {
+      url = "github:domenic/chai-as-promised";
+      flake = false;
+    };
   };
   outputs = inputs @ { self, nixpkgs, flake-utils, zotero-src, zotero-reader-src, zotero-pdf-worker-src, zotero-note-editor-src, zotero-styles, zotero-translators, ... }: flake-utils.lib.eachDefaultSystem (system: let
       pkgs = nixpkgs.legacyPackages.${system};
 
-      pdf_worker_revision = "<COMMITREVISION>";
-      pdf_reader_revision = "<COMMITREVISION>";
-      note_editor_revision = "<COMMITREVISION>";
-      app_revision = "<COMMITREVISION>";
-      app_short_revision = "<SHORTCOMMITREVISION>";
+      pdf_worker_revision = zotero-pdf-worker-src.rev;
+      pdf_reader_revision = zotero-pdf-worker-src.rev;
+      note_editor_revision = zotero-note-editor-src.rev;
+      app_revision = "LOLLOLOLOLOLOLOLOLOLOLOLOLOL";
+      app_short_revision = "LOLOLOL";
       app_branch_name = "main";
 
       patch_package_json = name: path: patch: pkgs.stdenv.mkDerivation {
@@ -128,12 +164,15 @@
         export PATH=${package}/node_modules/.bin:$PATH
       '';
       purity_patches = ''
+        # Git calls
         sed -i 's/git rev-parse HEAD/echo "${app_revision}"/g' app/scripts/dir_build
         sed -i 's/hash=`git .* --short HEAD`/hash=`echo "${app_short_revision}"`/g' app/scripts/dir_build
         sed -i 's/git rev-parse HEAD/echo "${pdf_worker_revision}"/g' js-build/pdf-worker.js
         sed -i 's/git rev-parse HEAD/echo "${pdf_reader_revision}"/g' js-build/pdf-reader.js
         sed -i 's/git rev-parse HEAD/echo "${note_editor_revision}"/g' js-build/note-editor.js
         sed -i 's/_getGitBranchName\\(\\) \\{/_getGitBranchName() {return "${app_branch_name}"/g' chrome/content/scaffold/scaffold.js
+
+        # Firefox download
         sed -i 's/curl -O .*/echo "Skipped curl"/g' app/scripts/fetch_xulrunner
         sed -i 's/tar xvf .*/echo "Skipped tar xvf"/g' app/scripts/fetch_xulrunner 
       '';
@@ -163,11 +202,11 @@
         sed -i '1d;s/colors.yellow//g' js-build/build.js
         sed -i 's/$(arch)/"${if system == "aarch64-linux" then "aarch64" else "x86_64"}"/g' app/scripts/dir_build
 
+        # fs.copy does not work here, but cp does. I suspect it's a node bug.
         sed -i 's/fs.copy.*;/exec(`cp -r "''${path.join(modulePath, \"build\", \"zotero\")}" "''${targetDir}"`);/g' js-build/pdf-reader.js       
         sed -i 's/fs.copy.*;/exec(`cp -r "''${path.join(modulePath, \"build\", \"zotero\")}" "''${targetDir}"`);/g' js-build/note-editor.js       
 
-        sed -i 's/find/echo/g' app/scripts/prepare_build
-
+        # These config options no longer exist.
         sed -i 's/.*MOZ_SERVICES_HEALTHREPORT.*//g' app/scripts/fetch_xulrunner
         sed -i 's/.*MOZ_TELEMETRY_ON_BY_DEFAULT.*//g' app/scripts/fetch_xulrunner
         sed -i 's/XPIInstall.jsm/XPIInstall.sys.mjs/g' app/scripts/fetch_xulrunner
@@ -179,6 +218,22 @@
         sed -i 's/ type=.*>/ \\\/>/g' app/scripts/fetch_xulrunner
         sed -i 's/.*showservicesmenu.*//g' app/scripts/fetch_xulrunner
         sed -i 's/rm "firefox-.*//g' app/scripts/fetch_xulrunner
+
+        # Don't let the script take a hash of firefox for whatever reason
+        # Plus I don't want to add openssl as a dependency
+        sed -i 's/set -euo pipefail/exit 0/g' app/scripts/xulrunner_hash 
+
+        sed -i 's/.*LightweightThemeConsumer.*//g' app/build.sh
+        sed -i 's/rm -rf "$omni_dir"//g' app/build.sh
+        sed -i 's/rm -rf $BUILD_DIR/echo "Skipped rm -rf BUILD_DIR"/g' app/build.sh
+        sed -i 's/rm -rf $build_dir/echo "Skipped rm -rf build_dir"/g' app/scripts/dir_build
+        
+        # Don't enable update machinery
+        sed -i 's/check_lfs_file.*updater.tar.xz"//g' app/build.sh
+        sed -i 's/tar xf.*updater"//g' app/build.sh
+        sed -i 's/chmod 755.*updater"//g' app/build.sh
+
+        sed -i 's/"$APP_ROOT_DIR.*-purgecaches.*//g' app/scripts/build_and_run
       '';
       
       shared_build_inputs = with pkgs; [
@@ -265,26 +320,52 @@
             ${misc_patches}
           '';
 
-          buildPhase = ''
+          buildPhase = let
+            fill_submodule = source: target_path: ''
+              rm -rf ${target_path}
+              mkdir -p ${dirOf target_path}
+              cp -r --no-preserve=mode,ownership ${source} ${target_path}
+            '';
+          in ''
+            # Show all commands
             set -x
+
+            ${fill_submodule zotero-styles "./styles"}
+            ${fill_submodule zotero-translators "./translators"}
+            ${fill_submodule inputs.zotero-csl-locale "./chrome/content/zotero/locale/csl"}
+            ${fill_submodule inputs.zotero-schema "./resource/schema/global"}
+            ${fill_submodule inputs.zotero-resource-SingleFile "./resource/SingleFile"}
+            ${fill_submodule inputs.zotero-utilities "./chrome/content/zotero/xpcom/utilities"}
+            ${fill_submodule inputs.zotero-translate "./chrome/content/zotero/xpcom/translate"}
+            ${fill_submodule inputs.zotero-libreoffice-integration "./app/modules/zotero-libreoffice-integration"}
+                        
+            # Place the un-tarred Firefox download for app/scripts/fetch_xulrunner to deal with
+            mkdir -p ./app/xulrunner
+            cp -r --no-preserve=mode,ownership ${firefox-tar} ./app/xulrunner/firefox
+            
+            # Link these submodules; their content does not need to be modified
             rm -rf ./reader
             rm -rf ./pdf-worker
             rm -rf ./note-editor
-            rm -rf ./styles
-            rm -rf ./translators
-            cp -r --no-preserve=mode,ownership ${zotero-styles} ./styles
-            cp -r --no-preserve=mode,ownership ${zotero-translators} ./translators
-            mkdir -p ./app/xulrunner
-            cp -r --no-preserve=mode,ownership ${firefox-tar} ./app/xulrunner/firefox
             ln -s ${zotero-reader} ./reader
             ln -s ${zotero-pdf-worker} ./pdf-worker
             ln -s ${zotero-note-editor} ./note-editor
+
             ${link_deps "." yarn_deps}
             NODE_ENV="debug" NODE_PATH="./node_modules" ./app/scripts/build_and_run -r
-            cp -r ./dist $out
+
+            mkdir -p $out/bin
+            mkdir -p $out/share/applications
+            cp -r app/staging/* $out
+            mv $out/Zotero_* $out/zotero
+            chmod +X $out/zotero/zotero-bin
+            ln -s $out/zotero/zotero-bin $out/bin
+            ln -s $out/zotero/zotero.desktop $out/share/applications
           '';
 
         };
+
+        
       };
     });
 }
