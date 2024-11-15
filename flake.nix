@@ -110,17 +110,32 @@
         yarnNix = ./pdfjs_yarn.nix;
       };
 
+      firefox-tar = let
+        nightly-str = "2024/11/2024-11-01-09-42-30-mozilla-central";
+        version = "134.0a1";
+        locale = "en-US";
+        hash-aarch64 = "s+41WQVe6TOuJNmTNmCz+tidw80LFA/g5QqNdDCYseI=";
+        hash-x86_64 = "iZrdHiRsEs9LnAjtVYNGbd1vMOC7R2+K2rHI+OQpFTE=";
+        reverse-system = if system == "aarch64-linux" then "linux-aarch64" else "linux-x86_64";
+      in pkgs.fetchzip {
+          url = "https://ftp.mozilla.org/pub/firefox/nightly/${nightly-str}/firefox-${version}.${locale}.${reverse-system}.tar.bz2";
+          sha256 = if system == "aarch64-linux" then hash-aarch64 else hash-x86_64;
+      };
+        
+
       link_deps = path: package: ''
         ln -s ${package}/node_modules ${path}/node_modules
         export PATH=${package}/node_modules/.bin:$PATH
       '';
-      purity_patches =''
+      purity_patches = ''
         sed -i 's/git rev-parse HEAD/echo "${app_revision}"/g' app/scripts/dir_build
         sed -i 's/hash=`git .* --short HEAD`/hash=`echo "${app_short_revision}"`/g' app/scripts/dir_build
         sed -i 's/git rev-parse HEAD/echo "${pdf_worker_revision}"/g' js-build/pdf-worker.js
         sed -i 's/git rev-parse HEAD/echo "${pdf_reader_revision}"/g' js-build/pdf-reader.js
         sed -i 's/git rev-parse HEAD/echo "${note_editor_revision}"/g' js-build/note-editor.js
         sed -i 's/_getGitBranchName\\(\\) \\{/_getGitBranchName() {return "${app_branch_name}"/g' chrome/content/scaffold/scaffold.js
+        sed -i 's/curl -O .*/echo "Skipped curl"/g' app/scripts/fetch_xulrunner
+        sed -i 's/tar xvf .*/echo "Skipped tar xvf"/g' app/scripts/fetch_xulrunner 
       '';
       skip_npm_command_patches = ''
         sed -i 's/npm ci/echo "Skipped npm ci"/g' js-build/pdf-reader.js
@@ -138,6 +153,7 @@
         sed -i 's/x86_64/aarch64/g' app/build.sh
         sed -i 's/x86_64/aarch64/g' app/scripts/dir_build
         sed -i 's/x86_64/aarch64/g' app/scripts/add_omni_file
+        sed -i 's/x86_64/aarch64/g' app/scripts/fetch_xulrunner
       '';
       shebang_patches = ''
         find ./app -type f -exec sed -i 's/\/bin\/bash/${pkgs.lib.strings.escape ["/"] "${pkgs.bash}/bin/bash"}/g' {} \;
@@ -151,6 +167,18 @@
         sed -i 's/fs.copy.*;/exec(`cp -r "''${path.join(modulePath, \"build\", \"zotero\")}" "''${targetDir}"`);/g' js-build/note-editor.js       
 
         sed -i 's/find/echo/g' app/scripts/prepare_build
+
+        sed -i 's/.*MOZ_SERVICES_HEALTHREPORT.*//g' app/scripts/fetch_xulrunner
+        sed -i 's/.*MOZ_TELEMETRY_ON_BY_DEFAULT.*//g' app/scripts/fetch_xulrunner
+        sed -i 's/XPIInstall.jsm/XPIInstall.sys.mjs/g' app/scripts/fetch_xulrunner
+        sed -i 's/XPIDatabase.jsm/XPIDatabase.sys.mjs/g' app/scripts/fetch_xulrunner
+        sed -i 's/XPIProvider.jsm/XPIProvider.sys.mjs/g' app/scripts/fetch_xulrunner
+        sed -i 's/info.addon.userPermissions/!difference.origins.length \&\& !difference.permissions.length/g' app/scripts/fetch_xulrunner
+        sed -i 's/..xml-stylesheet href/html:link rel=\"stylesheet\" href/g' app/scripts/fetch_xulrunner
+        sed -i 's/commonDialog.css/global.css/g' app/scripts/fetch_xulrunner
+        sed -i 's/ type=.*>/ \\\/>/g' app/scripts/fetch_xulrunner
+        sed -i 's/.*showservicesmenu.*//g' app/scripts/fetch_xulrunner
+        sed -i 's/rm "firefox-.*//g' app/scripts/fetch_xulrunner
       '';
       
       shared_build_inputs = with pkgs; [
@@ -219,12 +247,15 @@
             cp -r . $out/
           '';
         };
+
+        zotero-firefox = firefox-tar;
+        
         zotero = pkgs.stdenv.mkDerivation rec {
           name = "zotero";
 
           src = "${zotero-src}/";
 
-          nativeBuildInputs = shared_build_inputs ++ [ pkgs.python3 pkgs.tree yarn_deps ];
+          nativeBuildInputs = shared_build_inputs ++ [ pkgs.python3 pkgs.tree pkgs.perl pkgs.zip pkgs.unzip yarn_deps ];
 
           patchPhase = ''
             ${purity_patches}
@@ -243,6 +274,8 @@
             rm -rf ./translators
             cp -r --no-preserve=mode,ownership ${zotero-styles} ./styles
             cp -r --no-preserve=mode,ownership ${zotero-translators} ./translators
+            mkdir -p ./app/xulrunner
+            cp -r --no-preserve=mode,ownership ${firefox-tar} ./app/xulrunner/firefox
             ln -s ${zotero-reader} ./reader
             ln -s ${zotero-pdf-worker} ./pdf-worker
             ln -s ${zotero-note-editor} ./note-editor
