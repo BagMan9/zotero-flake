@@ -81,6 +81,7 @@
   }:
     flake-utils.lib.eachDefaultSystem (system: let
       pkgs = nixpkgs.legacyPackages.${system};
+      lib = pkgs.lib;
 
       pdf_worker_revision = zotero-pdf-worker-src.rev;
       pdf_reader_revision = zotero-pdf-worker-src.rev;
@@ -160,25 +161,6 @@
         yarnNix = ./pdfjs_yarn.nix;
       };
 
-      firefox-tar = let
-        nightly-str = "2024/11/2024-11-01-09-42-30-mozilla-central";
-        version = "134.0a1";
-        locale = "en-US";
-        hash-aarch64 = "s+41WQVe6TOuJNmTNmCz+tidw80LFA/g5QqNdDCYseI=";
-        hash-x86_64 = "iZrdHiRsEs9LnAjtVYNGbd1vMOC7R2+K2rHI+OQpFTE=";
-        reverse-system =
-          if system == "aarch64-linux"
-          then "linux-aarch64"
-          else "linux-x86_64";
-      in
-        pkgs.fetchzip {
-          url = "https://ftp.mozilla.org/pub/firefox/nightly/${nightly-str}/firefox-${version}.${locale}.${reverse-system}.tar.bz2";
-          sha256 =
-            if system == "aarch64-linux"
-            then hash-aarch64
-            else hash-x86_64;
-        };
-
       link_deps = path: package: ''
         ln -s ${package}/node_modules ${path}/node_modules
         export PATH=${package}/node_modules/.bin:$PATH
@@ -215,8 +197,8 @@
         sed -i 's/x86_64/aarch64/g' app/scripts/fetch_xulrunner
       '';
       shebang_patches = ''
-        find ./app -type f -exec sed -i 's/\/bin\/bash/${pkgs.lib.strings.escape ["/"] "${pkgs.bash}/bin/bash"}/g' {} \;
-        find ./app -type f -exec sed -i 's/\/usr\/bin\/env python3/${pkgs.lib.strings.escape ["/"] "${pkgs.python3}/bin/python"}/g' {} \;
+        find ./app -type f -exec sed -i 's/\/bin\/bash/${lib.strings.escape ["/"] "${pkgs.bash}/bin/bash"}/g' {} \;
+        find ./app -type f -exec sed -i 's/\/usr\/bin\/env python3/${lib.strings.escape ["/"] "${pkgs.python3}/bin/python"}/g' {} \;
       '';
       misc_patches = ''
         sed -i '1d;s/colors.yellow//g' js-build/build.js
@@ -242,6 +224,7 @@
         sed -i 's/ type=.*>/ \\\/>/g' app/scripts/fetch_xulrunner
         sed -i 's/.*showservicesmenu.*//g' app/scripts/fetch_xulrunner
         sed -i 's/rm "firefox-.*//g' app/scripts/fetch_xulrunner
+        sed -i 's/replace_line .*{. /echo /g' app/scripts/fetch_xulrunner
 
         # Don't let the script take a hash of firefox for whatever reason
         # Plus I don't want to add openssl as a dependency
@@ -258,8 +241,13 @@
         sed -i 's/chmod 755.*updater"//g' app/build.sh
 
         sed -i 's/"$APP_ROOT_DIR.*-purgecaches.*//g' app/scripts/build_and_run
-      '';
 
+        sed -i 's/# Copy icons/mkdir -p "$APPDIR\/icons"/g' app/build.sh
+
+        # Fix the Gecko version thing
+        sed -i 's/115/132/g' app/assets/application.ini
+      '';
+      
       shared_build_inputs = with pkgs; [
         nodejs
         rsync
@@ -267,6 +255,13 @@
         bash
         git
       ];
+
+      zotero-gtk_modules = with pkgs; [ libcanberra-gtk3 ];
+      zotero-libs = with pkgs; ([ udev libva mesa libnotify xorg.libXScrnSaver cups pciutils vulkan-loader ]
+            ++ (with xorg; [ stdenv.cc libX11 libXxf86dga libXxf86vm libXext libXt alsa-lib zlib ])
+            ++ (with pkgs; [ libglvnd pipewire ffmpeg libpulseaudio alsa-lib sndio libjack2 opensc speechd-minimal ])
+            ++ zotero-gtk_modules);
+      
     in rec {
       formatter = pkgs.alejandra;
       packages = rec {
@@ -331,69 +326,26 @@
           '';
         };
 
-        zotero-firefox = firefox-tar;
+        zotero-firefox = pkgs.firefox-unwrapped;
 
         zotero = pkgs.stdenv.mkDerivation rec {
           pname = "zotero";
-          version = "0.0.1";
+          version = "master";
 
           src = "${zotero-src}/";
 
           nativeBuildInputs = with pkgs;
             [
-              autoPatchelfHook
-              wrapGAppsHook3
               python3
               perl
               zip
               unzip
               yarn_deps
+              zotero-firefox
+              makeWrapper
+              removeReferencesTo
             ]
             ++ shared_build_inputs;
-
-          # Shamelessly stolen from pkgs.zotero_7
-          buildInputs = with pkgs; [
-            gsettings-desktop-schemas
-            glib
-            gtk3
-            gnome.adwaita-icon-theme
-            dconf
-            xorg.libXtst
-            alsa-lib
-            stdenv.cc.cc
-            atk
-            cairo
-            curl
-            cups
-            dbus-glib
-            dbus
-            fontconfig
-            freetype
-            gdk-pixbuf
-            glib
-            glibc
-            gtk3
-            xorg.libX11
-            xorg.libXScrnSaver
-            xorg.libXcomposite
-            xorg.libXcursor
-            xorg.libxcb
-            xorg.libXdamage
-            xorg.libXext
-            xorg.libXfixes
-            xorg.libXi
-            xorg.libXinerama
-            xorg.libXrender
-            xorg.libXt
-            libnotify
-            libGLU
-            libGL
-            nspr
-            nss
-            pango
-          ];
-
-          dontStrip = true;
 
           desktopItem = pkgs.makeDesktopItem {
             name = "zotero";
@@ -406,12 +358,6 @@
             startupNotify = true;
             mimeTypes = ["x-scheme-handler/zotero" "text/plain"];
           };
-
-          preFixup = ''
-            gappsWrapperArgs+=(
-              --prefix PATH : ${pkgs.lib.makeBinPath [pkgs.coreutils]}
-            )
-          '';
 
           patchPhase = ''
             ${purity_patches}
@@ -446,7 +392,7 @@
 
             # Place the un-tarred Firefox download for app/scripts/fetch_xulrunner to deal with
             mkdir -p ./app/xulrunner
-            cp -r --no-preserve=mode,ownership ${firefox-tar} ./app/xulrunner/firefox
+            cp -r -L --no-preserve=mode,ownership ${zotero-firefox}/lib/firefox ./app/xulrunner
 
             # Link these submodules; their content does not need to be modified
             rm -rf ./reader
@@ -457,25 +403,45 @@
             ln -s ${zotero-note-editor} ./note-editor
 
             ${link_deps "." yarn_deps}
-            NODE_ENV="debug" NODE_PATH="./node_modules" ./app/scripts/build_and_run -r
+
+            # Hopefully fix dumb thing
+            cp -r chrome/skin/default/zotero/16/light chrome/skin/default/zotero/16/white
             
+            NODE_PATH="./node_modules" ./app/scripts/build_and_run -r
+
+            mv app/staging/Zotero* app/staging/zotero
+
           '';
 
           installPhase = ''
-            cd app/staging
             runHook preInstall
-            cd ../..
-
-            mv app/staging/Zotero* app/staging/zotero
-            chmod +x app/staging/zotero/zotero
-            chmod +x app/staging/zotero/zotero-bin
             
-            mkdir -p "$prefix/usr/lib/zotero-${version}"
-            cp -r app/staging/zotero "$prefix/usr/lib/zotero-${version}"
+            mkdir -p "$prefix/lib"
+            cp -r --preserve=mode app/staging/zotero "$prefix/lib"
+            chmod +x "$prefix/lib/zotero/zotero"
+            chmod +x "$prefix/lib/zotero/zotero-bin"
+            chmod +x "$prefix/lib/zotero/glxtest"
+            chmod +x "$prefix/lib/zotero/vaapitest"
+            chmod +x "$prefix/lib/zotero/v4l2test"
             mkdir -p "$out/bin"
-            ln -s "$prefix/usr/lib/zotero-${version}/zotero" "$out/bin/"
+            
+            # Use logic from https://github.com/NixOS/nixpkgs/blob/nixos-unstable/pkgs/applications/networking/browsers/firefox/wrapper.nix
 
-            # install desktop file and icons.
+            makeWrapper "$prefix/lib/zotero/zotero" \
+              "$out/bin/zotero" \
+                --prefix LD_LIBRARY_PATH ':' "$libs" \
+                --suffix-each GTK_PATH ':' "$gtk_modules" \
+                ${lib.optionalString (!pkgs.xdg-utils.meta.broken) "--suffix PATH ':' \"${pkgs.xdg-utils}/bin\""} \
+                --suffix PATH ':' "$out/bin" \
+                --set MOZ_APP_LAUNCHER "zotero" \
+                --set MOZ_LEGACY_PROFILES 1 \
+                --set MOZ_ALLOW_DOWNGRADE 1 \
+                --prefix XDG_DATA_DIRS : "$GSETTINGS_SCHEMAS_PATH" \
+                --suffix XDG_DATA_DIRS : '${pkgs.adwaita-icon-theme}/share' \
+                --set-default MOZ_ENABLE_WAYLAND 1 \
+                "''${oldWrapperArgs[@]}"
+
+            # Install desktop file and icons.
             mkdir -p $out/share/applications
             cp ${desktopItem}/share/applications/* $out/share/applications/
             ls app/staging/zotero
@@ -486,10 +452,14 @@
             install -Dm444 app/staging/zotero/icons/symbolic.svg \
                 $out/share/icons/hicolor/symbolic/apps/zotero-symbolic.svg
 
+
             runHook postInstall
           '';
 
-          meta = with pkgs.lib; {
+          libs = lib.makeLibraryPath zotero-libs + ":" + lib.makeSearchPathOutput "lib" "lib64" zotero-libs;
+          gtk_modules = map (x: x + x.gtkModule) zotero-gtk_modules;
+
+          meta = with lib; {
             homepage = "https://www.zotero.org";
             description = "Collect, organize, cite, and share your research sources";
             mainProgram = "zotero";
