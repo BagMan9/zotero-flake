@@ -374,7 +374,6 @@
             mkdir -p ./app/xulrunner
             cp -r -L --no-preserve=mode,ownership ${zotero-firefox}/lib/firefox ./app/xulrunner
 
-            # Link these submodules; their content does not need to be modified
             ${fill_submodule zotero-reader "./reader"}
             ${fill_submodule zotero-pdf-worker "./pdf-worker"}
             ${fill_submodule zotero-note-editor "./note-editor"}
