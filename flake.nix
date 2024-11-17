@@ -212,10 +212,6 @@
           else "x86_64"
         }"/g' app/scripts/dir_build
 
-        # fs.copy does not work here, but cp does. I suspect it's a node bug.
-        sed -i 's/fs.copy.*;/exec(`cp -r "''${path.join(modulePath, \"build\", \"zotero\")}" "''${targetDir}"`);/g' js-build/pdf-reader.js
-        sed -i 's/fs.copy.*;/exec(`cp -r "''${path.join(modulePath, \"build\", \"zotero\")}" "''${targetDir}"`);/g' js-build/note-editor.js
-
         sed -i 's/replace_line .*{. /echo /g' app/scripts/fetch_xulrunner
         sed -i 's/rm "firefox-.*//g' app/scripts/fetch_xulrunner
 
@@ -246,12 +242,6 @@
         bash
         git
       ];
-
-      zotero-gtk_modules = with pkgs; [libcanberra-gtk3];
-      zotero-libs = with pkgs; ([mesa udev libva libnotify xorg.libXScrnSaver cups pciutils vulkan-loader]
-        ++ (with xorg; [stdenv.cc libX11 libXxf86dga libXxf86vm libXext libXt alsa-lib zlib])
-        ++ [libglvnd pipewire ffmpeg libpulseaudio alsa-lib sndio libjack2 opensc]
-        ++ zotero-gtk_modules);
     in rec {
       formatter = pkgs.alejandra;
       packages = rec {
@@ -385,12 +375,9 @@
             cp -r -L --no-preserve=mode,ownership ${zotero-firefox}/lib/firefox ./app/xulrunner
 
             # Link these submodules; their content does not need to be modified
-            rm -rf ./reader
-            rm -rf ./pdf-worker
-            rm -rf ./note-editor
-            ln -s ${zotero-reader} ./reader
-            ln -s ${zotero-pdf-worker} ./pdf-worker
-            ln -s ${zotero-note-editor} ./note-editor
+            ${fill_submodule zotero-reader "./reader"}
+            ${fill_submodule zotero-pdf-worker "./pdf-worker"}
+            ${fill_submodule zotero-note-editor "./note-editor"}
 
             ${link_deps "." yarn_deps}
 
@@ -417,13 +404,10 @@
 
             makeWrapper "$prefix/lib/zotero/zotero" \
               "$out/bin/zotero" \
-                --prefix LD_LIBRARY_PATH ':' "$libs" \
-                --suffix-each GTK_PATH ':' "$gtk_modules" \
-                ${lib.optionalString (!pkgs.xdg-utils.meta.broken) "--suffix PATH ':' \"${pkgs.xdg-utils}/bin\""} \
-                --suffix PATH ':' "$out/bin" \
                 --set MOZ_APP_LAUNCHER "zotero" \
                 --set MOZ_LEGACY_PROFILES 1 \
                 --set MOZ_ALLOW_DOWNGRADE 1 \
+                --suffix PATH ':' "$out/bin" \
                 --prefix XDG_DATA_DIRS : "$GSETTINGS_SCHEMAS_PATH" \
                 --suffix XDG_DATA_DIRS : '${pkgs.adwaita-icon-theme}/share' \
                 --set-default MOZ_ENABLE_WAYLAND 1 \
@@ -443,9 +427,6 @@
 
             runHook postInstall
           '';
-
-          libs = lib.makeLibraryPath zotero-libs + ":" + lib.makeSearchPathOutput "lib" "lib64" zotero-libs;
-          gtk_modules = map (x: x + x.gtkModule) zotero-gtk_modules;
 
           meta = with lib; {
             homepage = "https://www.zotero.org";
