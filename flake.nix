@@ -66,10 +66,14 @@
       url = "github:domenic/chai-as-promised";
       flake = false;
     };
+    nixpkgs-old = {
+      url = "github:NixOS/nixpkgs/b69de56fac8c2b6f8fd27f2eca01dcda8e0a4221";
+    };
   };
   outputs = inputs @ {
     self,
     nixpkgs,
+    nixpkgs-old,
     flake-utils,
     zotero-src,
     zotero-reader-src,
@@ -212,19 +216,20 @@
         sed -i 's/fs.copy.*;/exec(`cp -r "''${path.join(modulePath, \"build\", \"zotero\")}" "''${targetDir}"`);/g' js-build/pdf-reader.js
         sed -i 's/fs.copy.*;/exec(`cp -r "''${path.join(modulePath, \"build\", \"zotero\")}" "''${targetDir}"`);/g' js-build/note-editor.js
 
+        # JK, they do now.
         # These config options no longer exist.
-        sed -i 's/.*MOZ_SERVICES_HEALTHREPORT.*//g' app/scripts/fetch_xulrunner
-        sed -i 's/.*MOZ_TELEMETRY_ON_BY_DEFAULT.*//g' app/scripts/fetch_xulrunner
-        sed -i 's/XPIInstall.jsm/XPIInstall.sys.mjs/g' app/scripts/fetch_xulrunner
-        sed -i 's/XPIDatabase.jsm/XPIDatabase.sys.mjs/g' app/scripts/fetch_xulrunner
-        sed -i 's/XPIProvider.jsm/XPIProvider.sys.mjs/g' app/scripts/fetch_xulrunner
-        sed -i 's/info.addon.userPermissions/!difference.origins.length \&\& !difference.permissions.length/g' app/scripts/fetch_xulrunner
-        sed -i 's/..xml-stylesheet href/html:link rel=\"stylesheet\" href/g' app/scripts/fetch_xulrunner
-        sed -i 's/commonDialog.css/global.css/g' app/scripts/fetch_xulrunner
-        sed -i 's/ type=.*>/ \\\/>/g' app/scripts/fetch_xulrunner
-        sed -i 's/.*showservicesmenu.*//g' app/scripts/fetch_xulrunner
-        sed -i 's/rm "firefox-.*//g' app/scripts/fetch_xulrunner
+        # sed -i 's/.*MOZ_SERVICES_HEALTHREPORT.*//g' app/scripts/fetch_xulrunner
+        # sed -i 's/.*MOZ_TELEMETRY_ON_BY_DEFAULT.*//g' app/scripts/fetch_xulrunner
+        # sed -i 's/XPIInstall.jsm/XPIInstall.sys.mjs/g' app/scripts/fetch_xulrunner
+        # sed -i 's/XPIDatabase.jsm/XPIDatabase.sys.mjs/g' app/scripts/fetch_xulrunner
+        # sed -i 's/XPIProvider.jsm/XPIProvider.sys.mjs/g' app/scripts/fetch_xulrunner
+        # sed -i 's/info.addon.userPermissions/!difference.origins.length \&\& !difference.permissions.length/g' app/scripts/fetch_xulrunner
+        # sed -i 's/..xml-stylesheet href/html:link rel=\"stylesheet\" href/g' app/scripts/fetch_xulrunner
+        # sed -i 's/commonDialog.css/global.css/g' app/scripts/fetch_xulrunner
+        # sed -i 's/ type=.*>/ \\\/>/g' app/scripts/fetch_xulrunner
+        # sed -i 's/.*showservicesmenu.*//g' app/scripts/fetch_xulrunner
         sed -i 's/replace_line .*{. /echo /g' app/scripts/fetch_xulrunner
+        sed -i 's/rm "firefox-.*//g' app/scripts/fetch_xulrunner
 
         # Don't let the script take a hash of firefox for whatever reason
         # Plus I don't want to add openssl as a dependency
@@ -245,9 +250,9 @@
         sed -i 's/# Copy icons/mkdir -p "$APPDIR\/icons"/g' app/build.sh
 
         # Fix the Gecko version thing
-        sed -i 's/115/132/g' app/assets/application.ini
+        # sed -i 's/115/132/g' app/assets/application.ini
       '';
-      
+
       shared_build_inputs = with pkgs; [
         nodejs
         rsync
@@ -256,12 +261,11 @@
         git
       ];
 
-      zotero-gtk_modules = with pkgs; [ libcanberra-gtk3 ];
-      zotero-libs = with pkgs; ([ udev libva mesa libnotify xorg.libXScrnSaver cups pciutils vulkan-loader ]
-            ++ (with xorg; [ stdenv.cc libX11 libXxf86dga libXxf86vm libXext libXt alsa-lib zlib ])
-            ++ (with pkgs; [ libglvnd pipewire ffmpeg libpulseaudio alsa-lib sndio libjack2 opensc speechd-minimal ])
-            ++ zotero-gtk_modules);
-      
+      zotero-gtk_modules = with pkgs; [libcanberra-gtk3];
+      zotero-libs = with pkgs; ([mesa udev libva libnotify xorg.libXScrnSaver cups pciutils vulkan-loader]
+        ++ (with xorg; [stdenv.cc libX11 libXxf86dga libXxf86vm libXext libXt alsa-lib zlib])
+        ++ [libglvnd pipewire ffmpeg libpulseaudio alsa-lib sndio libjack2 opensc]
+        ++ zotero-gtk_modules);
     in rec {
       formatter = pkgs.alejandra;
       packages = rec {
@@ -326,8 +330,8 @@
           '';
         };
 
-        zotero-firefox = pkgs.firefox-unwrapped;
-
+        zotero-firefox = nixpkgs-old.legacyPackages.${system}.firefox-esr-115;
+        
         zotero = pkgs.stdenv.mkDerivation rec {
           pname = "zotero";
           version = "master";
@@ -406,7 +410,7 @@
 
             # Hopefully fix dumb thing
             cp -r chrome/skin/default/zotero/16/light chrome/skin/default/zotero/16/white
-            
+
             NODE_PATH="./node_modules" ./app/scripts/build_and_run -r
 
             mv app/staging/Zotero* app/staging/zotero
@@ -415,16 +419,15 @@
 
           installPhase = ''
             runHook preInstall
-            
+
             mkdir -p "$prefix/lib"
             cp -r --preserve=mode app/staging/zotero "$prefix/lib"
             chmod +x "$prefix/lib/zotero/zotero"
             chmod +x "$prefix/lib/zotero/zotero-bin"
             chmod +x "$prefix/lib/zotero/glxtest"
             chmod +x "$prefix/lib/zotero/vaapitest"
-            chmod +x "$prefix/lib/zotero/v4l2test"
             mkdir -p "$out/bin"
-            
+
             # Use logic from https://github.com/NixOS/nixpkgs/blob/nixos-unstable/pkgs/applications/networking/browsers/firefox/wrapper.nix
 
             makeWrapper "$prefix/lib/zotero/zotero" \

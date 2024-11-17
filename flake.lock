@@ -82,6 +82,22 @@
         "type": "github"
       }
     },
+    "nixpkgs-old": {
+      "locked": {
+        "lastModified": 1728538411,
+        "narHash": "sha256-f0SBJz1eZ2yOuKUr5CA9BHULGXVSn6miBuUWdTyhUhU=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "b69de56fac8c2b6f8fd27f2eca01dcda8e0a4221",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "b69de56fac8c2b6f8fd27f2eca01dcda8e0a4221",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
         "chai": "chai",
@@ -89,6 +105,7 @@
         "flake-utils": "flake-utils",
         "mocha": "mocha",
         "nixpkgs": "nixpkgs",
+        "nixpkgs-old": "nixpkgs-old",
         "zotero-csl-locale": "zotero-csl-locale",
         "zotero-libreoffice-integration": "zotero-libreoffice-integration",
         "zotero-note-editor-src": "zotero-note-editor-src",
@@ -240,7 +257,7 @@
         "dirtyRev": "a6c178dfe81e1f44f9a8a33085b5d5fe2fb6695b-dirty",
         "dirtyShortRev": "a6c178dfe-dirty",
         "lastModified": 1731475447,
-        "narHash": "sha256-VrGD4QJsk4ezHMj9UQNuGdkSDywrYpp0e9DKYN8xkQk=",
+        "narHash": "sha256-THQAWHGwM+YrprBn7eU7lzhhnD1KL+uaOROqwI56oks=",
         "type": "git",
         "url": "file:/home/asahimbp/Desktop/Mint/zotero-client"
       },
