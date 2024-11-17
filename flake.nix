@@ -216,18 +216,6 @@
         sed -i 's/fs.copy.*;/exec(`cp -r "''${path.join(modulePath, \"build\", \"zotero\")}" "''${targetDir}"`);/g' js-build/pdf-reader.js
         sed -i 's/fs.copy.*;/exec(`cp -r "''${path.join(modulePath, \"build\", \"zotero\")}" "''${targetDir}"`);/g' js-build/note-editor.js
 
-        # JK, they do now.
-        # These config options no longer exist.
-        # sed -i 's/.*MOZ_SERVICES_HEALTHREPORT.*//g' app/scripts/fetch_xulrunner
-        # sed -i 's/.*MOZ_TELEMETRY_ON_BY_DEFAULT.*//g' app/scripts/fetch_xulrunner
-        # sed -i 's/XPIInstall.jsm/XPIInstall.sys.mjs/g' app/scripts/fetch_xulrunner
-        # sed -i 's/XPIDatabase.jsm/XPIDatabase.sys.mjs/g' app/scripts/fetch_xulrunner
-        # sed -i 's/XPIProvider.jsm/XPIProvider.sys.mjs/g' app/scripts/fetch_xulrunner
-        # sed -i 's/info.addon.userPermissions/!difference.origins.length \&\& !difference.permissions.length/g' app/scripts/fetch_xulrunner
-        # sed -i 's/..xml-stylesheet href/html:link rel=\"stylesheet\" href/g' app/scripts/fetch_xulrunner
-        # sed -i 's/commonDialog.css/global.css/g' app/scripts/fetch_xulrunner
-        # sed -i 's/ type=.*>/ \\\/>/g' app/scripts/fetch_xulrunner
-        # sed -i 's/.*showservicesmenu.*//g' app/scripts/fetch_xulrunner
         sed -i 's/replace_line .*{. /echo /g' app/scripts/fetch_xulrunner
         sed -i 's/rm "firefox-.*//g' app/scripts/fetch_xulrunner
 
@@ -249,9 +237,6 @@
         sed -i 's/"$APP_ROOT_DIR.*-purgecaches.*//g' app/scripts/build_and_run
 
         sed -i 's/# Copy icons/mkdir -p "$APPDIR\/icons"/g' app/build.sh
-
-        # Fix the Gecko version thing
-        # sed -i 's/115/132/g' app/assets/application.ini
       '';
 
       shared_build_inputs = with pkgs; [
@@ -409,7 +394,6 @@
 
             ${link_deps "." yarn_deps}
 
-            # Hopefully fix dumb thing
             cp -r chrome/skin/default/zotero/16/light chrome/skin/default/zotero/16/white
 
             NODE_PATH="./node_modules" ./app/scripts/build_and_run -r
