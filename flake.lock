@@ -254,16 +254,17 @@
     "zotero-src": {
       "flake": false,
       "locked": {
-        "dirtyRev": "a6c178dfe81e1f44f9a8a33085b5d5fe2fb6695b-dirty",
-        "dirtyShortRev": "a6c178dfe-dirty",
-        "lastModified": 1731475447,
-        "narHash": "sha256-THQAWHGwM+YrprBn7eU7lzhhnD1KL+uaOROqwI56oks=",
+        "lastModified": 1731660841,
+        "narHash": "sha256-1r0jCnhm+7mJgZ7NsfkqWUhFTiyIQ4+uOoPH7S3lv50=",
+        "ref": "refs/heads/main",
+        "rev": "dc47650eb353a389dd01c20102ad5f4bbca7758b",
+        "revCount": 15000,
         "type": "git",
-        "url": "file:/home/asahimbp/Desktop/Mint/zotero-client"
+        "url": "https://github.com/zotero/zotero.git"
       },
       "original": {
         "type": "git",
-        "url": "file:/home/asahimbp/Desktop/Mint/zotero-client"
+        "url": "https://github.com/zotero/zotero.git"
       }
     },
     "zotero-styles": {

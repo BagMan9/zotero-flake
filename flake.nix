@@ -7,7 +7,7 @@
       url = github:numtide/flake-utils;
     };
     zotero-src = {
-      url = "git+file:/home/asahimbp/Desktop/Mint/zotero-client";
+      url = "git+https://github.com/zotero/zotero.git";
       flake = false;
     };
     zotero-reader-src = {
@@ -90,8 +90,8 @@
       pdf_worker_revision = zotero-pdf-worker-src.rev;
       pdf_reader_revision = zotero-pdf-worker-src.rev;
       note_editor_revision = zotero-note-editor-src.rev;
-      app_revision = "LOLLOLOLOLOLOLOLOLOLOLOLOLOL";
-      app_short_revision = "LOLOLOL";
+      app_revision = zotero-src.rev;
+      app_short_revision = zotero-src.shortRev;
       app_branch_name = "main";
 
       patch_package_json = name: path: patch:
@@ -239,6 +239,7 @@
         sed -i 's/rm -rf "$omni_dir"//g' app/build.sh
         sed -i 's/rm -rf $BUILD_DIR/echo "Skipped rm -rf BUILD_DIR"/g' app/build.sh
         sed -i 's/rm -rf $build_dir/echo "Skipped rm -rf build_dir"/g' app/scripts/dir_build
+        sed -i 's/cp.*removed-files.*$arch.*//g' app/build.sh
 
         # Don't enable update machinery
         sed -i 's/check_lfs_file.*updater.tar.xz"//g' app/build.sh
