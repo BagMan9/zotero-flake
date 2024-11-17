@@ -1,10 +1,10 @@
 {
   inputs = {
     nixpkgs = {
-      url = github:nixos/nixpkgs/nixos-unstable;
+      url = "github:nixos/nixpkgs/nixos-unstable";
     };
     flake-utils = {
-      url = github:numtide/flake-utils;
+      url = "github:numtide/flake-utils";
     };
     zotero-src = {
       url = "git+https://github.com/zotero/zotero.git";
