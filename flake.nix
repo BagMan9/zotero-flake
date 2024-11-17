@@ -307,7 +307,7 @@
         };
 
         zotero-firefox = nixpkgs-old.legacyPackages.${system}.firefox-esr-115;
-        
+
         zotero = pkgs.stdenv.mkDerivation rec {
           pname = "zotero";
           version = "master";
