@@ -308,133 +308,137 @@
 
         zotero-firefox = nixpkgs-old.legacyPackages.${system}.firefox-esr-115;
 
-        zotero = pkgs.stdenv.mkDerivation rec {
-          pname = "zotero";
-          version = "master";
+        zotero = let
+          build-zotero = {extensions ? []}:
+            pkgs.stdenv.mkDerivation rec {
+              pname = "zotero";
+              version = "master";
 
-          src = "${zotero-src}/";
+              src = "${zotero-src}/";
 
-          nativeBuildInputs = with pkgs;
-            [
-              python3
-              perl
-              zip
-              unzip
-              yarn_deps
-              zotero-firefox
-              makeWrapper
-              removeReferencesTo
-            ]
-            ++ shared_build_inputs;
+              nativeBuildInputs = with pkgs;
+                [
+                  python3
+                  perl
+                  zip
+                  unzip
+                  yarn_deps
+                  zotero-firefox
+                  makeWrapper
+                  removeReferencesTo
+                ]
+                ++ shared_build_inputs;
 
-          desktopItem = pkgs.makeDesktopItem {
-            name = "zotero";
-            exec = "zotero -url %U";
-            icon = "zotero";
-            comment = meta.description;
-            desktopName = "Zotero";
-            genericName = "Reference Management";
-            categories = ["Office" "Database"];
-            startupNotify = true;
-            mimeTypes = ["x-scheme-handler/zotero" "text/plain"];
-          };
+              desktopItem = pkgs.makeDesktopItem {
+                name = "zotero";
+                exec = "zotero -url %U";
+                icon = "zotero";
+                comment = meta.description;
+                desktopName = "Zotero";
+                genericName = "Reference Management";
+                categories = ["Office" "Database"];
+                startupNotify = true;
+                mimeTypes = ["x-scheme-handler/zotero" "text/plain"];
+              };
 
-          patchPhase = ''
-            ${purity_patches}
-            ${
-              if system == "aarch64-linux"
-              then aarch64_patches
-              else ""
-            }
-            ${skip_npm_command_patches}
-            ${shebang_patches}
-            ${misc_patches}
-          '';
+              patchPhase = ''
+                ${purity_patches}
+                ${
+                  if system == "aarch64-linux"
+                  then aarch64_patches
+                  else ""
+                }
+                ${skip_npm_command_patches}
+                ${shebang_patches}
+                ${misc_patches}
+              '';
 
-          buildPhase = let
-            fill_submodule = source: target_path: ''
-              rm -rf ${target_path}
-              mkdir -p ${dirOf target_path}
-              cp -r --no-preserve=mode,ownership ${source} ${target_path}
-            '';
-          in ''
-            # Show all commands
-            set -x
+              buildPhase = let
+                fill_submodule = source: target_path: ''
+                  rm -rf ${target_path}
+                  mkdir -p ${dirOf target_path}
+                  cp -r --no-preserve=mode,ownership ${source} ${target_path}
+                '';
+              in ''
+                # Show all commands
+                set -x
 
-            ${fill_submodule zotero-styles "./styles"}
-            ${fill_submodule zotero-translators "./translators"}
-            ${fill_submodule inputs.zotero-csl-locale "./chrome/content/zotero/locale/csl"}
-            ${fill_submodule inputs.zotero-schema "./resource/schema/global"}
-            ${fill_submodule inputs.zotero-resource-SingleFile "./resource/SingleFile"}
-            ${fill_submodule inputs.zotero-utilities "./chrome/content/zotero/xpcom/utilities"}
-            ${fill_submodule inputs.zotero-translate "./chrome/content/zotero/xpcom/translate"}
-            ${fill_submodule inputs.zotero-libreoffice-integration "./app/modules/zotero-libreoffice-integration"}
+                ${fill_submodule zotero-styles "./styles"}
+                ${fill_submodule zotero-translators "./translators"}
+                ${fill_submodule inputs.zotero-csl-locale "./chrome/content/zotero/locale/csl"}
+                ${fill_submodule inputs.zotero-schema "./resource/schema/global"}
+                ${fill_submodule inputs.zotero-resource-SingleFile "./resource/SingleFile"}
+                ${fill_submodule inputs.zotero-utilities "./chrome/content/zotero/xpcom/utilities"}
+                ${fill_submodule inputs.zotero-translate "./chrome/content/zotero/xpcom/translate"}
+                ${fill_submodule inputs.zotero-libreoffice-integration "./app/modules/zotero-libreoffice-integration"}
 
-            # Place the un-tarred Firefox download for app/scripts/fetch_xulrunner to deal with
-            mkdir -p ./app/xulrunner
-            cp -r -L --no-preserve=mode,ownership ${zotero-firefox}/lib/firefox ./app/xulrunner
+                # Place the un-tarred Firefox download for app/scripts/fetch_xulrunner to deal with
+                mkdir -p ./app/xulrunner
+                cp -r -L --no-preserve=mode,ownership ${zotero-firefox}/lib/firefox ./app/xulrunner
 
-            ${fill_submodule zotero-reader "./reader"}
-            ${fill_submodule zotero-pdf-worker "./pdf-worker"}
-            ${fill_submodule zotero-note-editor "./note-editor"}
+                ${fill_submodule zotero-reader "./reader"}
+                ${fill_submodule zotero-pdf-worker "./pdf-worker"}
+                ${fill_submodule zotero-note-editor "./note-editor"}
 
-            ${link_deps "." yarn_deps}
+                ${link_deps "." yarn_deps}
 
-            cp -r chrome/skin/default/zotero/16/light chrome/skin/default/zotero/16/white
+                cp -r chrome/skin/default/zotero/16/light chrome/skin/default/zotero/16/white
 
-            NODE_PATH="./node_modules" ./app/scripts/build_and_run -r
+                NODE_PATH="./node_modules" ./app/scripts/build_and_run -r
 
-            mv app/staging/Zotero* app/staging/zotero
+                mv app/staging/Zotero* app/staging/zotero
 
-          '';
+              '';
 
-          installPhase = ''
-            runHook preInstall
+              installPhase = ''
+                runHook preInstall
 
-            mkdir -p "$prefix/lib"
-            cp -r --preserve=mode app/staging/zotero "$prefix/lib"
-            chmod +x "$prefix/lib/zotero/zotero"
-            chmod +x "$prefix/lib/zotero/zotero-bin"
-            chmod +x "$prefix/lib/zotero/glxtest"
-            chmod +x "$prefix/lib/zotero/vaapitest"
-            mkdir -p "$out/bin"
+                mkdir -p "$prefix/lib"
+                cp -r --preserve=mode app/staging/zotero "$prefix/lib"
+                chmod +x "$prefix/lib/zotero/zotero"
+                chmod +x "$prefix/lib/zotero/zotero-bin"
+                chmod +x "$prefix/lib/zotero/glxtest"
+                chmod +x "$prefix/lib/zotero/vaapitest"
+                mkdir -p "$out/bin"
 
-            # Use logic from https://github.com/NixOS/nixpkgs/blob/nixos-unstable/pkgs/applications/networking/browsers/firefox/wrapper.nix
+                # Use logic from https://github.com/NixOS/nixpkgs/blob/nixos-unstable/pkgs/applications/networking/browsers/firefox/wrapper.nix
 
-            makeWrapper "$prefix/lib/zotero/zotero" \
-              "$out/bin/zotero" \
-                --set MOZ_APP_LAUNCHER "zotero" \
-                --set MOZ_LEGACY_PROFILES 1 \
-                --set MOZ_ALLOW_DOWNGRADE 1 \
-                --suffix PATH ':' "$out/bin" \
-                --prefix XDG_DATA_DIRS : "$GSETTINGS_SCHEMAS_PATH" \
-                --suffix XDG_DATA_DIRS : '${pkgs.adwaita-icon-theme}/share' \
-                --set-default MOZ_ENABLE_WAYLAND 1 \
-                "''${oldWrapperArgs[@]}"
+                makeWrapper "$prefix/lib/zotero/zotero" \
+                  "$out/bin/zotero" \
+                    --set MOZ_APP_LAUNCHER "zotero" \
+                    --set MOZ_LEGACY_PROFILES 1 \
+                    --set MOZ_ALLOW_DOWNGRADE 1 \
+                    --suffix PATH ':' "$out/bin" \
+                    --prefix XDG_DATA_DIRS : "$GSETTINGS_SCHEMAS_PATH" \
+                    --suffix XDG_DATA_DIRS : '${pkgs.adwaita-icon-theme}/share' \
+                    --set-default MOZ_ENABLE_WAYLAND 1 \
+                    "''${oldWrapperArgs[@]}"
 
-            # Install desktop file and icons.
-            mkdir -p $out/share/applications
-            cp ${desktopItem}/share/applications/* $out/share/applications/
-            ls app/staging/zotero
-            for size in 32 64 128; do
-              install -Dm444 app/staging/zotero/icons/icon$size.png \
-                $out/share/icons/hicolor/''${size}x''${size}/apps/zotero.png
-            done
-            install -Dm444 app/staging/zotero/icons/symbolic.svg \
-                $out/share/icons/hicolor/symbolic/apps/zotero-symbolic.svg
+                # Install desktop file and icons.
+                mkdir -p $out/share/applications
+                cp ${desktopItem}/share/applications/* $out/share/applications/
+                ls app/staging/zotero
+                for size in 32 64 128; do
+                  install -Dm444 app/staging/zotero/icons/icon$size.png \
+                    $out/share/icons/hicolor/''${size}x''${size}/apps/zotero.png
+                done
+                install -Dm444 app/staging/zotero/icons/symbolic.svg \
+                    $out/share/icons/hicolor/symbolic/apps/zotero-symbolic.svg
 
 
-            runHook postInstall
-          '';
+                runHook postInstall
+              '';
 
-          meta = with lib; {
-            homepage = "https://www.zotero.org";
-            description = "Collect, organize, cite, and share your research sources";
-            mainProgram = "zotero";
-            license = licenses.agpl3Only;
-            platforms = ["x86_64-linux" "aarch64-linux"];
-          };
-        };
+              meta = with lib; {
+                homepage = "https://www.zotero.org";
+                description = "Collect, organize, cite, and share your research sources";
+                mainProgram = "zotero";
+                license = licenses.agpl3Only;
+                platforms = ["x86_64-linux" "aarch64-linux"];
+              };
+            };
+        in
+          lib.makeOverridable build-zotero {};
       };
     });
 }
