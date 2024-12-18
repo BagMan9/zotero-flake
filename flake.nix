@@ -11,7 +11,7 @@
       flake = false;
     };
     zotero-reader-src = {
-      url = "git+https://github.com/zotero/reader.git?ref=master&rev=6ad00d5944a313aa9bd1803b148dfb7ef09345c3&submodules=1";
+      url = "git+https://github.com/zotero/reader.git?ref=master&rev=b5b4d06ebbae2348a3edc4c8e63c822e58cb2f89&submodules=1";
       flake = false;
     };
     zotero-pdf-worker-src = {
